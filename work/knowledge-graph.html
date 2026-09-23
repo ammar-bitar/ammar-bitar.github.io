@@ -354,7 +354,7 @@ footer{
   <div class="bar">
     <span>Ammar Bitar</span>
     <nav aria-label="Sections"><a href="../">Home</a><a href="#why">Why a graph</a><a href="#ontology">Ontology</a><a href="#pipeline">Pipeline</a><a href="#use">In use</a></nav>
-    <button class="theme-switch" id="themeBtn" type="button" role="switch" aria-checked="true" aria-label="Switch to light theme">
+    <button class="theme-switch" id="themeBtn" type="button" role="switch" aria-checked="true" aria-label="Dark theme" title="Dark theme">
       <span class="track">
         <svg class="ico sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
           <circle cx="12" cy="12" r="4.4"/>
@@ -511,7 +511,6 @@ footer{
   function sync(){
     var dark=current()==='dark';
     btn.setAttribute('aria-checked',dark?'true':'false');
-    btn.setAttribute('aria-label',dark?'Switch to light theme':'Switch to dark theme');
     if(tc) tc.setAttribute('content',dark?'#0E151B':'#ECEFF1');
   }
   sync();
