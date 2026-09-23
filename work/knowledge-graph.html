@@ -15,8 +15,8 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#ECEFF1" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0E151B" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#0E151B">
+<script>try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="preload" href="../assets/fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="../assets/fonts/newsreader.woff2" as="font" type="font/woff2" crossorigin>
 <style>
@@ -34,28 +34,22 @@
   src:url(../assets/fonts/newsreader-italic.woff2) format("woff2");
 }
 :root{
-  --paper:#ECEFF1;
-  --paper-2:#E1E6EA;
-  --ink:#16212A;
-  --muted:#586672;
-  --rule:#C5CED5;
-  --on:#D23F4E;
-  --off:#2C5FD0;
+  --paper:#0E151B;
+  --paper-2:#141D25;
+  --ink:#E4EAEE;
+  --muted:#93A1AC;
+  --rule:#26323C;
+  --on:#F0606C;
+  --off:#5B8BF2;
   --display:"Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
   --text:"Newsreader", Georgia, "Times New Roman", serif;
   --gutter:clamp(1.25rem, 4vw, 3.5rem);
   --measure:62ch;
-  color-scheme:light;
+  color-scheme:dark;
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --paper:#0E151B; --paper-2:#141D25; --ink:#E4EAEE; --muted:#93A1AC;
-    --rule:#26323C; --on:#F0606C; --off:#5B8BF2; color-scheme:dark;
-  }
-}
-:root[data-theme="dark"]{
-  --paper:#0E151B; --paper-2:#141D25; --ink:#E4EAEE; --muted:#93A1AC;
-  --rule:#26323C; --on:#F0606C; --off:#5B8BF2; color-scheme:dark;
+:root[data-theme="light"]{
+  --paper:#ECEFF1; --paper-2:#E1E6EA; --ink:#16212A; --muted:#586672;
+  --rule:#C5CED5; --on:#D23F4E; --off:#2C5FD0; color-scheme:light;
 }
 
 *{box-sizing:border-box}
@@ -82,6 +76,41 @@ a:hover{text-decoration-color:var(--ink)}
 .bar nav{display:flex;gap:1.25rem;flex-wrap:wrap}
 .bar nav a{text-decoration:none;color:var(--muted)}
 .bar nav a:hover{color:var(--ink)}
+
+/* ---------- theme switch ---------- */
+.theme-switch{
+  align-self:center;display:inline-flex;align-items:center;
+  padding:0;margin:0;border:0;background:none;font:inherit;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.theme-switch .track{
+  position:relative;display:inline-flex;align-items:center;justify-content:space-between;
+  width:3.2rem;height:1.6rem;padding:0 .32rem;
+  border:1px solid var(--rule);border-radius:1rem;background:var(--paper-2);
+  transition:border-color .2s ease,background .2s ease;
+}
+.theme-switch:hover .track{border-color:var(--muted)}
+.theme-switch .knob{
+  position:absolute;left:.11rem;top:50%;width:1.2rem;height:1.2rem;margin-top:-.6rem;
+  border-radius:50%;background:var(--ink);z-index:0;
+  transform:translateX(1.76rem);
+  transition:transform .24s cubic-bezier(.4,0,.2,1),background .2s ease;
+}
+.theme-switch .ico{
+  position:relative;z-index:1;width:.8rem;height:.8rem;display:block;
+  color:var(--muted);transition:color .2s ease;
+}
+.theme-switch .moon{color:var(--paper)}
+:root[data-theme="light"] .theme-switch .knob{transform:translateX(0)}
+:root[data-theme="light"] .theme-switch .sun{color:var(--paper)}
+:root[data-theme="light"] .theme-switch .moon{color:var(--muted)}
+@media (prefers-reduced-motion: reduce){.theme-switch .knob{transition:none}}
+@media (max-width:600px){
+  .bar{align-items:center}
+  .bar > span{order:1}
+  .theme-switch{order:2}
+  .bar nav{order:3;flex-basis:100%;margin-top:.15rem}
+}
 
 /* ---------- hero ---------- */
 .hero{padding:clamp(2rem,7vw,5rem) var(--gutter) 0}
@@ -239,13 +268,8 @@ footer{
   padding:1.5rem var(--gutter) 2rem;font-family:var(--display);font-size:.85rem;color:var(--muted);
   border-top:1px solid var(--rule);
 }
-.theme-btn{
-  font:inherit;color:inherit;background:none;border:1px solid var(--rule);border-radius:1rem;
-  padding:.1rem .7rem;cursor:pointer;
-}
-.theme-btn:hover{color:var(--ink);border-color:var(--muted)}
 @media print{
-  .bar nav,.sensor,.legend,.theme-btn{display:none}
+  .bar nav,.sensor,.legend,.theme-switch{display:none}
   .sr.print{position:static;width:auto;height:auto;clip:auto}
 }
 
@@ -329,6 +353,18 @@ footer{
   <div class="bar">
     <span>Ammar Bitar</span>
     <nav aria-label="Sections"><a href="../">Home</a><a href="#why">Why a graph</a><a href="#ontology">Ontology</a><a href="#pipeline">Pipeline</a><a href="#use">In use</a></nav>
+    <button class="theme-switch" id="themeBtn" type="button" role="switch" aria-checked="true" aria-label="Switch to light theme">
+      <span class="track">
+        <svg class="ico sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.4"/>
+          <path d="M12 1.6v2.6M12 19.8v2.6M22.4 12h-2.6M4.2 12H1.6M19.35 4.65l-1.84 1.84M6.49 17.51l-1.84 1.84M19.35 19.35l-1.84-1.84M6.49 6.49L4.65 4.65"/>
+        </svg>
+        <svg class="ico moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.6 14.3A8.8 8.8 0 0 1 9.7 3.4a8.8 8.8 0 1 0 10.9 10.9z"/>
+        </svg>
+        <span class="knob"></span>
+      </span>
+    </button>
   </div>
 </header>
 <main id="main" class="cs" style="padding-top:clamp(2rem,6vw,4rem)">
@@ -465,18 +501,20 @@ footer{
 
 <footer>
   <span>© 2026 Ammar Bitar</span>
-  <button class="theme-btn" id="themeBtn" type="button">Switch to dark</button>
 </footer>
 <script>
 (function(){
   var root=document.documentElement, btn=document.getElementById('themeBtn');
-  var mq=window.matchMedia('(prefers-color-scheme: dark)');
-  function stored(){try{return localStorage.getItem('theme')}catch(e){return null}}
-  function current(){return root.dataset.theme||(mq.matches?'dark':'light')}
-  function label(){btn.textContent=current()==='dark'?'Switch to light':'Switch to dark'}
-  var s=stored(); if(s==='dark'||s==='light') root.dataset.theme=s; label();
-  btn.addEventListener('click',function(){var n=current()==='dark'?'light':'dark';root.dataset.theme=n;try{localStorage.setItem('theme',n)}catch(e){}label();window.dispatchEvent(new Event('themechange'))});
-  if(mq.addEventListener) mq.addEventListener('change',function(){label();window.dispatchEvent(new Event('themechange'))});
+  var tc=document.querySelector('meta[name="theme-color"]');
+  function current(){return root.dataset.theme==='light'?'light':'dark'}
+  function sync(){
+    var dark=current()==='dark';
+    btn.setAttribute('aria-checked',dark?'true':'false');
+    btn.setAttribute('aria-label',dark?'Switch to light theme':'Switch to dark theme');
+    if(tc) tc.setAttribute('content',dark?'#0E151B':'#ECEFF1');
+  }
+  sync();
+  btn.addEventListener('click',function(){var n=current()==='dark'?'light':'dark';root.dataset.theme=n;try{localStorage.setItem('theme',n)}catch(e){}sync();window.dispatchEvent(new Event('themechange'))});
 })();
 </script>
 
