@@ -53,6 +53,7 @@
       <dt>Scope</dt><dd>Event-camera vehicle detection, DVS-to-RGB co-calibration and sensor fusion, YOLO fine-tuned for night and heavy precipitation, benchmarked against the RGB and CNN baseline</dd>
       <dt>Setting</dt><dd>Cameras on the gantries that carry the overhead signs, looking down the Autobahn</dd>
       <dt>Sensors</dt><dd>A dynamic vision sensor (DVS) event camera working alongside a conventional RGB camera</dd>
+      <dt>Result</dt><dd>Vehicle detection, classification and re-identification that held up in heavy rain, snow and wind, where the frame camera's mAP fell below 40%</dd>
       <dt>About the figures</dt><dd>The diagrams and interactive pieces here are built for this page: working simulations of the ideas, written from scratch so you can play with them.</dd>
     </dl>
   </div>
@@ -107,6 +108,9 @@
         </svg>
         <figcaption>The event stream and the frame stream each get a detector; the co-calibration (dashed blue) is what lets their detections be placed in one frame of reference and fused.</figcaption>
       </figure>
+      <div class="callout">
+        <p><strong>Result.</strong> The event-camera pipeline made it viable to detect, classify and re-identify vehicles in heavy rain, snow and wind. In those conditions the frame camera's mAP fell below 40%, while the event camera's stayed stable at high accuracy.</p>
+      </div>
     </div>
   </section>
 
