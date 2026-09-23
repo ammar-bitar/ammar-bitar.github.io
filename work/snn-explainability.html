@@ -492,10 +492,10 @@ footer{
     <div class="prose">
       <p>The two datasets needed opposite preprocessing.</p>
       <p><strong>DVS128-Gesture is already event data.</strong> Each recording is a stream of (x, y, t, polarity) tuples. The networks took either the raw stream, timestep by timestep, or one of the event-frame representations described above. Either way a spike is an element of the input tensor, so the perturbation experiments could remove spikes one at a time and re-run the prediction.</p>
-      <p><strong>CIFAR-10 contains images</strong>, so each pixel has to be encoded as a spike train before a spiking network can use it. We used four neural codings:</p>
+      <p><strong>CIFAR-10 contains images</strong>, so each pixel has to be encoded as a spike train before a spiking network can use it. We used five neural codings:</p>
       <figure class="sim">
-        <canvas id="codes" width="880" height="400" aria-label="Four spike encodings of the same pixel intensities: time to first spike, time to last spike, Poisson and phase coding" role="img"></canvas>
-        <div class="ctl"><button type="button" id="cNew">New intensities</button><label>Six pixel intensities, each encoded four ways over one window.</label></div>
+        <canvas id="codes" width="880" height="400" aria-label="Five spike encodings of the same pixel intensities: rate, Poisson, time to first spike, time to last spike and phase coding" role="img"></canvas>
+        <div class="ctl"><button type="button" id="cNew">New intensities</button><label>Six pixel intensities, each encoded five ways over one window.</label></div>
         <figcaption>The same six intensities under each coding. Rate and Poisson spend more spikes on brighter pixels; time-to-first-spike and time-to-last-spike spend one spike and put the information in when it lands; phase coding assigns a weight to each position in a period and fires where the intensity's bits are set.</figcaption>
       </figure>
       <ul class="plain">
