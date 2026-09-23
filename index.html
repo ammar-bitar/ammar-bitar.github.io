@@ -817,13 +817,19 @@ footer{
     if(acc>900){ acc=0; burst(6); }
   },{passive:true});
 
-  /* step aside once the real contact section is on screen */
-  var target=document.getElementById('contact');
-  if(target && 'IntersectionObserver' in window){
-    new IntersectionObserver(function(es){
-      fab.classList.toggle('tucked',es[0].isIntersecting);
-      if(es[0].isIntersecting) open(false);
-    },{threshold:.25}).observe(target);
+  /* stay off the first screen, which already has the nav's Contact link,
+     and step aside once the real contact section is on screen */
+  var away={}, watch={top:document.querySelector('.hero, .cs-head'), contact:document.getElementById('contact')};
+  if('IntersectionObserver' in window){
+    Object.keys(watch).forEach(function(k){
+      if(!watch[k]) return;
+      new IntersectionObserver(function(es){
+        away[k]=es[0].isIntersecting;
+        var t=away.top||away.contact;
+        fab.classList.toggle('tucked',t);
+        if(t) open(false);
+      },{threshold:k==='contact'?.25:0}).observe(watch[k]);
+    });
   }
 })();
 </script>
