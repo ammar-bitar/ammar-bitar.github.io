@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seeing the Autobahn through an event camera: Ammar Bitar</title>
+<meta name="description" content="Case study: event-camera vehicle detection from motorway gantries in the Providentia++ programme, sensor fusion, and the event representations behind it.">
+<meta property="og:title" content="Seeing the Autobahn through an event camera">
+<meta property="og:description" content="Case study: event-camera vehicle detection from motorway gantries in the Providentia++ programme, sensor fusion, and the event representations behind it.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect x='3' y='3' width='4' height='4' fill='%23D23F4E'/><rect x='9' y='9' width='4' height='4' fill='%232C5FD0'/></svg>">
+<link rel="canonical" href="https://ammar-bitar.github.io/work/providentia.html">
+<meta property="og:url" content="https://ammar-bitar.github.io/work/providentia.html">
+<meta property="og:type" content="article">
+<meta property="og:image" content="https://ammar-bitar.github.io/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#ECEFF1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E151B" media="(prefers-color-scheme: dark)">
+<link rel="preload" href="../assets/fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../assets/fonts/newsreader.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face{
+  font-family:"Bricolage Grotesque";font-style:normal;font-display:swap;
+  font-weight:200 800;font-stretch:75% 100%;
+  src:url(../assets/fonts/bricolage-grotesque.woff2) format("woff2");
+}
+@font-face{
+  font-family:"Newsreader";font-style:normal;font-display:swap;font-weight:200 800;
+  src:url(../assets/fonts/newsreader.woff2) format("woff2");
+}
+@font-face{
+  font-family:"Newsreader";font-style:italic;font-display:swap;font-weight:200 800;
+  src:url(../assets/fonts/newsreader-italic.woff2) format("woff2");
+}
+:root{
+  --paper:#ECEFF1;
+  --paper-2:#E1E6EA;
+  --ink:#16212A;
+  --muted:#586672;
+  --rule:#C5CED5;
+  --on:#D23F4E;
+  --off:#2C5FD0;
+  --display:"Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --text:"Newsreader", Georgia, "Times New Roman", serif;
+  --gutter:clamp(1.25rem, 4vw, 3.5rem);
+  --measure:62ch;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E151B; --paper-2:#141D25; --ink:#E4EAEE; --muted:#93A1AC;
+    --rule:#26323C; --on:#F0606C; --off:#5B8BF2; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E151B; --paper-2:#141D25; --ink:#E4EAEE; --muted:#93A1AC;
+  --rule:#26323C; --on:#F0606C; --off:#5B8BF2; color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--text);font-size:1.1875rem;line-height:1.6;
+  font-optical-sizing:auto;text-rendering:optimizeLegibility;
+}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration-thickness:1px;text-underline-offset:.18em;text-decoration-color:var(--muted)}
+a:hover{text-decoration-color:var(--ink)}
+:focus-visible{outline:2px solid var(--off);outline-offset:3px;border-radius:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:var(--gutter);top:-3rem;background:var(--ink);color:var(--paper);padding:.4rem .8rem;font-family:var(--display);font-size:.9rem;z-index:10}
+.skip:focus{top:.75rem}
+
+/* ---------- masthead ---------- */
+.bar{
+  display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;
+  padding:1.25rem var(--gutter) 0;font-family:var(--display);font-size:.95rem;color:var(--muted);
+}
+.bar nav{display:flex;gap:1.25rem;flex-wrap:wrap}
+.bar nav a{text-decoration:none;color:var(--muted)}
+.bar nav a:hover{color:var(--ink)}
+
+/* ---------- hero ---------- */
+.hero{padding:clamp(2rem,7vw,5rem) var(--gutter) 0}
+.sensor{position:relative;width:100%}
+.sensor canvas{display:block;width:100%;touch-action:pan-y;cursor:crosshair}
+.hero-foot{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2rem;align-items:end;
+  margin-top:clamp(1.5rem,4vw,2.75rem);padding-bottom:clamp(2.5rem,6vw,4.5rem);
+  border-bottom:1px solid var(--rule);
+}
+.lede{
+  margin:0;max-width:34ch;font-size:clamp(1.35rem,2.4vw,1.85rem);line-height:1.32;font-weight:350;
+}
+.legend{
+  margin:0;font-family:var(--display);font-size:.85rem;line-height:1.45;color:var(--muted);
+  max-width:24ch;
+}
+.legend span{display:inline-flex;align-items:center;gap:.4rem;margin-right:.8rem;color:var(--ink)}
+.px{display:inline-block;width:.55rem;height:.55rem}
+.px.on{background:var(--on)} .px.off{background:var(--off)}
+.legend p{margin:.35rem 0 0}
+@media (max-width:760px){.hero-foot{grid-template-columns:1fr}.legend{max-width:none}}
+
+/* ---------- thread index ---------- */
+.index{display:grid;border-bottom:1px solid var(--rule)}
+.index a{
+  display:grid;grid-template-columns:2.5rem minmax(0,1fr) minmax(0,1.3fr);gap:.2rem 1.5rem;align-items:baseline;
+  padding:1.05rem 0;border-top:1px solid var(--rule);text-decoration:none;color:inherit;
+}
+.index a:first-child{border-top:0}
+.index .k{font-family:var(--display);font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.index .n{font-family:var(--display);font-weight:600;font-size:1.15rem;letter-spacing:-.01em;font-variation-settings:"wdth" 90}
+.index .d{font-size:1.02rem;color:var(--muted);line-height:1.4}
+.index a:hover .n{text-decoration:underline;text-decoration-color:var(--on);text-underline-offset:.2em}
+@media (max-width:760px){.index a{grid-template-columns:2.5rem minmax(0,1fr)}.index .d{grid-column:2}}
+.now{margin:.9rem 0 0;font-family:var(--display);font-size:1rem;color:var(--muted)}
+.now a{color:var(--ink)}
+.more{font-family:var(--display);font-size:.98rem;margin:0 0 .9rem}
+.more a{text-decoration-color:var(--on);text-decoration-thickness:1.5px}
+.result{font-style:italic;font-size:1.15rem;line-height:1.45;margin:0 0 .8rem;max-width:var(--measure)}
+.interests{margin:1.1em 0 0;font-family:var(--display);font-size:.95rem;color:var(--muted)}
+.interests span{color:var(--ink)}
+
+/* ---------- sections ---------- */
+main{padding:0 var(--gutter)}
+.sec{
+  display:grid;grid-template-columns:minmax(9rem,15rem) minmax(0,1fr);gap:1rem clamp(1.5rem,5vw,5rem);
+  padding:clamp(3rem,7vw,5.5rem) 0;border-bottom:1px solid var(--rule);
+}
+.sec > h2{
+  margin:0;font-family:var(--display);font-weight:500;font-size:1.05rem;letter-spacing:.005em;
+  font-variation-settings:"wdth" 100;align-self:start;position:sticky;top:1.5rem;
+}
+.sec > h2::before{content:"";display:inline-block;width:.45rem;height:.45rem;background:var(--on);margin:0 1.35rem .1rem 0;box-shadow:.7rem 0 0 var(--off)}
+.sec > h2 small{display:block;padding-left:1.8rem;font-weight:400;color:var(--muted);font-size:.9rem;margin-top:.15rem}
+@media (max-width:760px){
+  .sec{grid-template-columns:minmax(0,1fr)}
+  .sec > h2{position:static}
+}
+.prose p{margin:0 0 1.1em;max-width:var(--measure)}
+.prose p:last-child{margin-bottom:0}
+
+/* about */
+.about{display:grid;grid-template-columns:minmax(0,1fr) minmax(11rem,15rem);gap:clamp(1.5rem,4vw,3.5rem);align-items:start}
+.portrait{margin:0;justify-self:center;text-align:center}
+.frame{
+  width:clamp(8.5rem,14vw,11.5rem);aspect-ratio:1;border-radius:50%;overflow:hidden;margin:0 auto;
+  background:var(--paper-2);box-shadow:0 0 0 1px var(--rule),0 0 0 7px var(--paper),0 0 0 8px var(--rule);
+}
+.frame img{width:170%;max-width:none;height:auto;margin:-18% 0 0 -36.7%;filter:saturate(.9)}
+.portrait figcaption{font-family:var(--display);font-size:.82rem;line-height:1.45;color:var(--muted);margin-top:1.1rem;max-width:14rem}
+@media (max-width:900px){
+  .about{grid-template-columns:1fr}
+  .portrait{order:-1;justify-self:start;text-align:left;display:flex;align-items:center;gap:1.25rem}
+  .portrait .frame{margin:8px;flex:none;width:7rem}
+  .portrait figcaption{margin-top:0}
+}
+
+/* threads */
+.threads{display:grid;gap:0}
+.thread{
+  display:grid;grid-template-columns:3.25rem minmax(0,1fr);gap:0 1.25rem;
+  padding:1.6rem 0;border-top:1px solid var(--rule);
+}
+.thread:first-child{border-top:0;padding-top:0}
+.thread svg{width:3.25rem;height:3.25rem;margin-top:.3rem}
+.thread h3{
+  margin:0 0 .45rem;font-family:var(--display);font-weight:600;
+  font-size:clamp(1.35rem,2.3vw,1.7rem);line-height:1.15;letter-spacing:-.012em;
+  font-variation-settings:"wdth" 88;
+}
+.thread p{margin:0 0 .7rem;max-width:var(--measure)}
+.tools{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:.35rem .9rem;font-family:var(--display);font-size:.88rem;color:var(--muted)}
+
+/* timeline */
+.timeline{list-style:none;margin:0;padding:0}
+.job{
+  display:grid;grid-template-columns:7.5rem minmax(0,1fr);gap:.25rem 1.5rem;
+  padding:1.4rem 0;border-top:1px solid var(--rule);
+}
+.job:first-child{border-top:0;padding-top:0}
+.when{font-family:var(--display);font-size:.95rem;color:var(--muted);padding-top:.3rem;font-variant-numeric:tabular-nums}
+.job h3{margin:0;font-family:var(--display);font-weight:600;font-size:1.3rem;line-height:1.2;letter-spacing:-.01em}
+.role{margin:.15rem 0 .8rem;font-family:var(--display);font-size:1rem;color:var(--muted)}
+.job ul{margin:0;padding:0 0 0 1.05rem;max-width:var(--measure)}
+.job li{margin:0 0 .35rem;padding-left:.2rem;font-size:1.08rem}
+.job li::marker{content:"▪ ";color:var(--rule)}
+.job:nth-child(odd) li:nth-child(odd)::marker{color:var(--on)}
+.job:nth-child(even) li:nth-child(even)::marker{color:var(--off)}
+@media (max-width:560px){.job{grid-template-columns:1fr}.when{padding-top:0}}
+
+/* writing */
+.pubs{list-style:none;margin:0;padding:0}
+.pub{padding:0 0 1.6rem}
+.pub:last-child{padding-bottom:0}
+.pub .title{font-size:clamp(1.3rem,2.2vw,1.6rem);line-height:1.3;font-style:italic;margin:0 0 .3rem;max-width:40ch}
+.pub .meta{margin:0;font-family:var(--display);font-size:.95rem;color:var(--muted)}
+.pub .meta a{color:var(--ink)}
+.aside{grid-column:2;margin:1.6rem 0 0;font-family:var(--display);font-size:.95rem;color:var(--muted)}
+@media (max-width:760px){.aside{grid-column:1}}
+.status{display:inline-block;margin-left:.2rem;padding:.02rem .45rem;border:1px solid var(--rule);border-radius:1rem;font-size:.8rem}
+
+/* toolkit */
+.kit{margin:0;display:grid;grid-template-columns:minmax(9rem,13rem) minmax(0,1fr);max-width:52rem}
+.kit dt,.kit dd{padding:.7rem 0;border-top:1px solid var(--rule);margin:0}
+.kit dt:first-of-type,.kit dd:first-of-type{border-top:0;padding-top:0}
+.kit dt{font-family:var(--display);font-weight:500;font-size:.98rem;padding-right:1rem}
+.kit dd{font-size:1.05rem}
+@media (max-width:560px){
+  .kit{grid-template-columns:1fr}
+  .kit dd{border-top:0;padding-top:0}
+  .kit dt:not(:first-of-type){padding-top:.9rem}
+}
+
+/* education */
+.edu{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(15rem,100%),1fr));gap:2rem 3rem;max-width:56rem}
+.edu h3{margin:0 0 .25rem;font-family:var(--display);font-weight:600;font-size:1.2rem;line-height:1.25}
+.edu p{margin:0}
+.edu .where{font-family:var(--display);font-size:.95rem;color:var(--muted);margin-bottom:.5rem}
+
+/* contact */
+.contact h2.big::before{content:none}
+.contact h2.big{
+  grid-column:1/-1;position:static;margin:0;
+  font-family:var(--display);font-weight:600;font-variation-settings:"wdth" 80;
+  font-size:clamp(2.6rem,8vw,6.5rem);line-height:.95;letter-spacing:-.03em;
+}
+.links{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:1rem 2.5rem;margin-top:1.25rem;font-family:var(--display);font-size:clamp(1.1rem,2vw,1.35rem)}
+.links a{text-decoration-color:var(--on);text-decoration-thickness:2px}
+.links a:nth-child(2){text-decoration-color:var(--off)}
+.contact{border-bottom:0}
+
+footer{
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem 1rem;
+  padding:1.5rem var(--gutter) 2rem;font-family:var(--display);font-size:.85rem;color:var(--muted);
+  border-top:1px solid var(--rule);
+}
+.theme-btn{
+  font:inherit;color:inherit;background:none;border:1px solid var(--rule);border-radius:1rem;
+  padding:.1rem .7rem;cursor:pointer;
+}
+.theme-btn:hover{color:var(--ink);border-color:var(--muted)}
+@media print{
+  .bar nav,.sensor,.legend,.theme-btn{display:none}
+  .sr.print{position:static;width:auto;height:auto;clip:auto}
+}
+
+/* ---------- case study ---------- */
+.cs{max-width:72rem;margin:0 auto;padding:0 var(--gutter)}
+.crumb{font-family:var(--display);font-size:.95rem;color:var(--muted);margin:0 0 2.5rem}
+.crumb a{text-decoration:none;color:var(--muted)} .crumb a:hover{color:var(--ink)}
+.cs-head{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(14rem,1fr);gap:2rem clamp(2rem,6vw,6rem);padding-bottom:clamp(2rem,5vw,3.5rem);border-bottom:1px solid var(--rule)}
+.cs-head h1{margin:0 0 1rem;font-family:var(--display);font-weight:600;font-variation-settings:"wdth" 84;font-size:clamp(2.2rem,5.2vw,4.2rem);line-height:1;letter-spacing:-.025em}
+.cs-head .lede{font-size:clamp(1.2rem,1.9vw,1.45rem)}
+.facts{margin:0;font-family:var(--display);font-size:.95rem;line-height:1.5}
+.facts dt{color:var(--muted);margin-top:.9rem} .facts dt:first-child{margin-top:0}
+.facts dd{margin:0;color:var(--ink)}
+@media (max-width:760px){.cs-head{grid-template-columns:minmax(0,1fr)}}
+.cs .sec{grid-template-columns:minmax(7rem,11rem) minmax(0,1fr)}
+@media (max-width:760px){.cs .sec{grid-template-columns:minmax(0,1fr)}.cs .sec > h2 b{display:inline;margin-left:.5rem}}
+.cs .sec > h2::before{content:none}
+.cs .sec > h2{font-variation-settings:"wdth" 100;font-size:1rem;color:var(--muted);font-weight:500}
+.cs .sec > h2 b{display:block;color:var(--ink);font-weight:600;font-size:1.05rem;margin-top:.1rem}
+.fig{margin:1.5rem 0 .5rem;max-width:44rem}
+.fig svg{width:100%;height:auto;display:block;font-family:var(--display)}
+.fig figcaption{font-family:var(--display);font-size:.85rem;color:var(--muted);margin-top:.7rem;line-height:1.45}
+.callout{border-left:2px solid var(--off);padding:.2rem 0 .2rem 1.1rem;margin:1.4rem 0;max-width:var(--measure)}
+.callout p{margin:0 0 .6em} .callout p:last-child{margin:0}
+.callout.on{border-color:var(--on)}
+.cs ul.plain{margin:0 0 1.1em;padding-left:1.1rem;max-width:var(--measure)}
+.cs ul.plain li{margin:0 0 .45rem}
+.cs ul.plain li::marker{color:var(--rule)}
+.backlink{font-family:var(--display);padding:2.5rem 0 1rem}
+.backlink a{text-decoration-color:var(--on);text-decoration-thickness:2px}
+
+.sim{margin:1.5rem 0 .5rem;max-width:44rem}
+.sim canvas{display:block;width:100%;height:auto;border:1px solid var(--rule);border-radius:3px;background:var(--paper-2)}
+.sim figcaption{font-family:var(--display);font-size:.85rem;color:var(--muted);margin-top:.7rem;line-height:1.45}
+.sim .ctl{display:flex;gap:.6rem;flex-wrap:wrap;margin:.6rem 0 0;font-family:var(--display);font-size:.85rem}
+.sim .ctl button{font:inherit;color:var(--ink);background:none;border:1px solid var(--rule);border-radius:1rem;padding:.15rem .75rem;cursor:pointer}
+.sim .ctl button[aria-pressed="true"]{border-color:var(--ink)}
+.sim .ctl label{display:inline-flex;align-items:center;gap:.4rem;color:var(--muted)}
+
+/* ---------- floating contact ---------- */
+.fab{
+  position:fixed;right:clamp(1rem,3vw,2rem);bottom:clamp(1rem,3vw,2rem);z-index:40;
+  display:flex;flex-direction:column;align-items:flex-end;gap:.5rem;
+  font-family:var(--display);
+}
+.fab-links{
+  display:flex;flex-direction:column;align-items:stretch;gap:.35rem;
+  opacity:0;transform:translateY(.4rem) scale(.98);pointer-events:none;
+  transition:opacity .18s ease,transform .18s ease;
+}
+.fab[data-open="true"] .fab-links{opacity:1;transform:none;pointer-events:auto}
+.fab-links a{
+  background:var(--paper);border:1px solid var(--rule);border-radius:2rem;
+  padding:.45rem .9rem;font-size:.92rem;text-decoration:none;color:var(--ink);
+  box-shadow:0 2px 10px rgba(0,0,0,.07);white-space:nowrap;display:flex;align-items:center;gap:.5rem;
+}
+.fab-links a:hover{border-color:var(--ink)}
+.fab-links a i{width:.5rem;height:.5rem;display:inline-block;flex:none}
+.fab-btn{
+  display:flex;align-items:center;gap:.55rem;cursor:pointer;
+  background:var(--ink);color:var(--paper);border:0;border-radius:2rem;
+  padding:.6rem 1.05rem;font:inherit;font-weight:500;font-size:.95rem;
+  box-shadow:0 3px 14px rgba(0,0,0,.14);
+}
+.fab-btn:hover{transform:translateY(-1px)}
+.fab-btn .px2{display:inline-flex;gap:.2rem}
+.fab-btn .px2 i{width:.4rem;height:.4rem;display:block}
+.fab-btn .px2 i:first-child{background:var(--on)}
+.fab-btn .px2 i:last-child{background:var(--off)}
+.fab canvas{position:absolute;right:-6px;bottom:-6px;width:230px;height:120px;pointer-events:none}
+.fab.tucked{opacity:0;transform:translateY(1rem);pointer-events:none;transition:opacity .25s ease,transform .25s ease}
+.fab{transition:opacity .25s ease,transform .25s ease}
+@media (prefers-reduced-motion: reduce){.fab,.fab-links,.fab-btn{transition:none}}
+@media print{.fab{display:none}}
+.tag{display:inline-block;font-family:var(--display);font-size:.78rem;padding:.05rem .5rem;border:1px solid var(--rule);border-radius:1rem;color:var(--muted);vertical-align:.15em}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header>
+  <div class="bar">
+    <span>Ammar Bitar</span>
+    <nav aria-label="Sections"><a href="../">Home</a><a href="#why">Why</a><a href="#build">The build</a><a href="#repr">Representations</a><a href="#learned">Lessons</a></nav>
+  </div>
+</header>
+<main id="main" class="cs" style="padding-top:clamp(2rem,6vw,4rem)">
+  <p class="crumb"><a href="../">Ammar Bitar</a> / Work / Case study</p>
+  <div class="cs-head">
+    <div>
+      <h1>Seeing the Autobahn through an event camera</h1>
+      <p class="lede">Vehicle detection from cameras on motorway gantries, using an event camera alongside a frame camera, with a focus on night and heavy rain.</p>
+    </div>
+    <dl class="facts">
+      <dt>Where</dt><dd>Intel Labs, Munich, 2020 to 2022, within the Providentia++ motorway-sensing programme</dd>
+      <dt>Scope</dt><dd>Event-camera vehicle detection, DVS-to-RGB co-calibration and sensor fusion, YOLO fine-tuned for night and heavy precipitation, benchmarked against the RGB and CNN baseline</dd>
+      <dt>Setting</dt><dd>Cameras on the gantries that carry the overhead signs, looking down the Autobahn</dd>
+      <dt>Sensors</dt><dd>A dynamic vision sensor (DVS) event camera working alongside a conventional RGB camera</dd>
+      <dt>About the figures</dt><dd>The diagrams and interactive pieces here are built for this page: working simulations of the ideas, written from scratch so you can play with them.</dd>
+    </dl>
+  </div>
+
+  <section class="sec" id="why" aria-labelledby="w-h">
+    <h2 id="w-h">01<b>Why an event camera on a gantry</b></h2>
+    <div class="prose">
+      <p>Providentia++ put sensors on the gantries along a stretch of motorway so that vehicles could be detected and tracked from the infrastructure instead of from the car. Frame cameras on a gantry struggle at night and in rain: exposure times get longer, headlights bloom, and rain adds streaks and glare. Detectors trained on daytime images get worse in these conditions.</p>
+      <p>An event camera does not take frames. Each pixel reports on its own when the brightness it sees changes by more than a threshold, and whether it went up (an ON event) or down (an OFF event). Nothing is reported where nothing changes. With a fixed camera over a road, the static road produces no events and each moving vehicle produces events along its edges, with microsecond timing and a much higher dynamic range than a frame sensor. The project tested whether that advantage holds up with a real detector, in bad weather, and alongside an RGB camera.</p>
+      <figure class="sim">
+        <canvas id="road" width="880" height="440" aria-label="Simulated gantry camera views of a motorway, as a frame camera and as an event camera" role="img"></canvas>
+        <div class="ctl">
+          <button type="button" id="vFwd" aria-pressed="true">Looking down the road</button>
+          <button type="button" id="vTop" aria-pressed="false">Looking straight down</button>
+          <span style="width:.6rem"></span>
+          <button type="button" id="vFrame" aria-pressed="false">Frame camera</button>
+          <button type="button" id="vEvent" aria-pressed="true">Event camera</button>
+          <button type="button" id="vNight" aria-pressed="false">Night</button>
+        </div>
+        <figcaption>Two gantry viewpoints, each as a frame camera and as an event camera. Looking down the road, vehicles shrink as they drive away and grow as they approach. The event view shows only what moves: ON events in red and OFF events in blue on each vehicle's edges, and nothing on the road surface. Switch on night to see the frame view fill with headlight bloom while the event view stays the same.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="sec" id="build" aria-labelledby="b-h">
+    <h2 id="b-h">02<b>The build</b></h2>
+    <div class="prose">
+      <ul class="plain">
+        <li><strong>Event-based vehicle detection.</strong> Event streams were accumulated into representations a detector can consume (see below), and YOLO models were fine-tuned on them, with the fine-tuning aimed specifically at robustness at night and in heavy precipitation.</li>
+        <li><strong>DVS-to-RGB co-calibration.</strong> The two cameras see the same road from slightly different positions and with different optics. Before their outputs can be combined, every event pixel has to map onto a known position in the frame image. I built the co-calibration between the event camera and the RGB camera so that detections from one could be placed in the other's coordinates.</li>
+        <li><strong>Sensor fusion.</strong> With the cameras calibrated, detections from the event and frame streams were fused. The frame camera contributes appearance and colour in good light; the event camera contributes motion edges when the light is poor.</li>
+        <li><strong>Benchmarking.</strong> The event-based pipeline was evaluated against an RGB-and-CNN baseline, with attention to the night and rain conditions the programme cared about.</li>
+      </ul>
+      <figure class="fig">
+        <svg viewBox="0 0 720 210" role="img" aria-labelledby="b-t">
+          <title id="b-t">Pipeline diagram: the event camera and the RGB camera on the gantry each feed a YOLO detector; a co-calibration step maps between the two image planes; a fusion step combines the detections.</title>
+          <defs><marker id="pa" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="var(--muted)"/></marker></defs>
+          <g font-size="12" font-weight="600" fill="var(--ink)">
+            <rect x="10" y="30" width="130" height="52" rx="3" fill="var(--paper-2)" stroke="var(--on)" stroke-width="1.6"/><text x="75" y="52" text-anchor="middle">Event camera</text><text x="75" y="70" text-anchor="middle" font-weight="400" font-size="10" fill="var(--muted)">ON/OFF events</text>
+            <rect x="10" y="130" width="130" height="52" rx="3" fill="var(--paper-2)" stroke="var(--ink)" stroke-width="1.2"/><text x="75" y="152" text-anchor="middle">RGB camera</text><text x="75" y="170" text-anchor="middle" font-weight="400" font-size="10" fill="var(--muted)">frames</text>
+            <rect x="200" y="30" width="140" height="52" rx="3" fill="var(--paper-2)" stroke="var(--ink)" stroke-width="1.2"/><text x="270" y="52" text-anchor="middle">Accumulate</text><text x="270" y="70" text-anchor="middle" font-weight="400" font-size="10" fill="var(--muted)">events to tensors</text>
+            <rect x="400" y="30" width="120" height="52" rx="3" fill="var(--paper-2)" stroke="var(--ink)" stroke-width="1.2"/><text x="460" y="52" text-anchor="middle">YOLO</text><text x="460" y="70" text-anchor="middle" font-weight="400" font-size="10" fill="var(--muted)">fine-tuned: night, rain</text>
+            <rect x="400" y="130" width="120" height="52" rx="3" fill="var(--paper-2)" stroke="var(--ink)" stroke-width="1.2"/><text x="460" y="152" text-anchor="middle">CNN baseline</text><text x="460" y="170" text-anchor="middle" font-weight="400" font-size="10" fill="var(--muted)">on frames</text>
+            <rect x="580" y="80" width="130" height="52" rx="3" fill="var(--paper)" stroke="var(--on)" stroke-width="1.8"/><text x="645" y="102" text-anchor="middle">Fusion</text><text x="645" y="120" text-anchor="middle" font-weight="400" font-size="10" fill="var(--muted)">detections combined</text>
+            <rect x="200" y="86" width="140" height="40" rx="3" fill="var(--paper)" stroke="var(--off)" stroke-width="1.6" stroke-dasharray="4 3"/><text x="270" y="105" text-anchor="middle" font-size="11">Co-calibration</text><text x="270" y="119" text-anchor="middle" font-weight="400" font-size="10" fill="var(--muted)">DVS plane to RGB plane</text>
+          </g>
+          <g stroke="var(--muted)" stroke-width="1.2" fill="none" marker-end="url(#pa)">
+            <path d="M140 56 L198 56"/><path d="M340 56 L398 56"/><path d="M520 56 C 560 56, 560 100, 578 104"/>
+            <path d="M140 156 L398 156"/><path d="M520 156 C 560 156, 560 112, 578 110"/>
+          </g>
+          <g stroke="var(--off)" stroke-width="1.2" fill="none" stroke-dasharray="3 3"><path d="M75 82 L75 100 L198 106"/><path d="M75 130 L75 112 L198 108"/><path d="M340 106 C 400 106, 500 100, 578 106"/></g>
+        </svg>
+        <figcaption>The event stream and the frame stream each get a detector; the co-calibration (dashed blue) is what lets their detections be placed in one frame of reference and fused.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+
+  <section class="sec" id="repr" aria-labelledby="r-h">
+    <h2 id="r-h">03<b>Turning events into something a detector can read</b></h2>
+    <div class="prose">
+      <p>A raw event is a four-tuple: x, y, timestamp, polarity. A detector like YOLO wants a tensor. How you get from one to the other decides what the detector can see, so a good part of the work was building and comparing event-frame representations. Three families, next to the frame they come from:</p>
+      <figure class="sim">
+        <canvas id="reprC" width="880" height="560" aria-label="One moment of the motorway scene as an RGB frame, and the same window of events as a binned event frame, a voxel grid in space and time, and a leaky-binned surface" role="img"></canvas>
+        <figcaption>The same 80 ms of road, four ways. The events are generated the way a sensor generates them: the scene is rendered at each sub-step and a pixel fires when its log intensity crosses a contrast threshold, ON when it brightens and OFF when it darkens. Top left, the frame camera at the end of the window. Top right, plain binning: every event on one plane, so the near car leaves a thick band instead of an edge. Bottom left, a voxel grid: the same events cut into five time bins and stacked along time, where you can watch the car walk across the bins. Bottom right, leaky binning: each event decays after it arrives, so the newest edge is strongest and the trail fades.</figcaption>
+      </figure>
+      <ul class="plain">
+        <li><strong>Binning.</strong> Count or sum events per pixel over a fixed window, optionally with ON and OFF in separate channels. Cheap and dense, but everything that happened in the window lands on one plane, so a fast vehicle smears.</li>
+        <li><strong>Voxel grids, 3D and 4D.</strong> Split the window into B time bins and accumulate into a B × H × W tensor, with each event's weight spread linearly between its two nearest bins. Keeping polarity as a separate channel gives a 4D tensor. Order of motion survives, at the cost of memory and a heavier input.</li>
+        <li><strong>Leaky binning.</strong> Instead of hard windows, integrate with a decay: each pixel keeps its recent events and forgets older ones on a time constant, similar to a time surface. This helps because a vehicle at 130 km/h and one crawling in a jam produce very different event rates.</li>
+      </ul>
+      <p>Which representation works best depends on traffic speed, lighting and the detector, so comparing them was part of the work.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="learned" aria-labelledby="l-h">
+    <h2 id="l-h">04<b>What it taught me</b></h2>
+    <div class="prose">
+      <p>Most of the effort went into the parts around the detector. The event representation made a real difference, so we compared several of them instead of picking one up front. The event camera and the RGB camera had to be calibrated against each other before fusing their detections made any sense. And the tests that counted were the ones at night and in rain, since that is where the event camera was supposed to help.</p>
+    </div>
+  </section>
+
+  <p class="backlink"><a href="../">Back to the overview</a> &nbsp;·&nbsp; <a href="../work/edge-vision.html">Next case study: Catching defects at line speed</a></p>
+</main>
+
+<div class="fab" id="fab" data-open="false">
+  <canvas id="fabSpark" width="460" height="240" aria-hidden="true"></canvas>
+  <div class="fab-links" id="fabLinks">
+    <a href="mailto:ammar.bitar@outlook.com"><i style="background:var(--on)"></i>ammar.bitar@outlook.com</a>
+    <a href="https://www.linkedin.com/in/ammar-bitar"><i style="background:var(--off)"></i>LinkedIn</a>
+  </div>
+  <button class="fab-btn" id="fabBtn" type="button" aria-expanded="false" aria-controls="fabLinks">
+    <span class="px2" aria-hidden="true"><i></i><i></i></span>Contact me
+  </button>
+</div>
+
+<footer>
+  <span>© 2026 Ammar Bitar</span>
+  <button class="theme-btn" id="themeBtn" type="button">Switch to dark</button>
+</footer>
+<script>
+(function(){
+  var root=document.documentElement, btn=document.getElementById('themeBtn');
+  var mq=window.matchMedia('(prefers-color-scheme: dark)');
+  function stored(){try{return localStorage.getItem('theme')}catch(e){return null}}
+  function current(){return root.dataset.theme||(mq.matches?'dark':'light')}
+  function label(){btn.textContent=current()==='dark'?'Switch to light':'Switch to dark'}
+  var s=stored(); if(s==='dark'||s==='light') root.dataset.theme=s; label();
+  btn.addEventListener('click',function(){var n=current()==='dark'?'light':'dark';root.dataset.theme=n;try{localStorage.setItem('theme',n)}catch(e){}label();window.dispatchEvent(new Event('themechange'))});
+  if(mq.addEventListener) mq.addEventListener('change',function(){label();window.dispatchEvent(new Event('themechange'))});
+})();
+</script>
+
+<script>
+(function(){
+  var fab=document.getElementById('fab'), btn=document.getElementById('fabBtn'), links=document.getElementById('fabLinks');
+  if(!fab) return;
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function open(v){ fab.dataset.open=v?'true':'false'; btn.setAttribute('aria-expanded',v?'true':'false'); }
+  btn.addEventListener('click',function(e){ e.stopPropagation(); open(fab.dataset.open!=='true'); burst(18); });
+  document.addEventListener('click',function(e){ if(!fab.contains(e.target)) open(false); });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') open(false); });
+  fab.addEventListener('mouseenter',function(){ if(!reduce) burst(8); });
+
+  /* the button sheds ON/OFF events when it moves, like everything else here */
+  var c=document.getElementById('fabSpark'), x=c&&c.getContext('2d'), evs=[], raf=0;
+  function colors(){var cs=getComputedStyle(document.documentElement);return[cs.getPropertyValue('--on').trim(),cs.getPropertyValue('--off').trim()]}
+  function burst(n){
+    if(!x||reduce) return;
+    var r=c.width, b=c.height;
+    for(var i=0;i<n;i++){
+      var a=Math.PI*(0.75+Math.random()*0.9), s=1.2+Math.random()*3.4;
+      evs.push({x:r-60+Math.random()*26,y:b-40+Math.random()*16,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1.1,p:Math.random()<.5?0:1,e:1});
+    }
+    if(!raf) raf=requestAnimationFrame(tick);
+  }
+  function tick(){
+    var cl=colors(); x.clearRect(0,0,c.width,c.height);
+    for(var i=evs.length-1;i>=0;i--){
+      var e=evs[i]; e.x+=e.vx; e.y+=e.vy; e.vy+=0.11; e.e*=0.955;
+      if(e.e<0.06||e.y>c.height+20){ evs.splice(i,1); continue; }
+      x.globalAlpha=e.e; x.fillStyle=cl[e.p]; x.fillRect(e.x,e.y,5,5);
+    }
+    x.globalAlpha=1;
+    raf = evs.length ? requestAnimationFrame(tick) : 0;
+  }
+  var lastY=window.scrollY, acc=0;
+  window.addEventListener('scroll',function(){
+    var dy=Math.abs(window.scrollY-lastY); lastY=window.scrollY; acc+=dy;
+    if(acc>900){ acc=0; burst(6); }
+  },{passive:true});
+
+  /* step aside once the real contact section is on screen */
+  var target=document.getElementById('contact');
+  if(target && 'IntersectionObserver' in window){
+    new IntersectionObserver(function(es){
+      fab.classList.toggle('tucked',es[0].isIntersecting);
+      if(es[0].isIntersecting) open(false);
+    },{threshold:.25}).observe(target);
+  }
+})();
+</script>
+<script>
+(function(){
+  function rng(s){return function(){s=(s*16807)%2147483647;return s/2147483647}}
+  function col(){var cs=getComputedStyle(document.documentElement);return{ink:cs.getPropertyValue('--ink').trim(),on:cs.getPropertyValue('--on').trim(),off:cs.getPropertyValue('--off').trim(),mut:cs.getPropertyValue('--muted').trim(),p2:cs.getPropertyValue('--paper-2').trim(),rule:cs.getPropertyValue('--rule').trim()}}
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ============ shared scene: a 4-lane motorway, coordinates in metres ============ */
+  // lanes centred at x = -5.25,-1.75,1.75,5.25 ; z = distance along the road (0..220)
+  var LANES=[-5.25,-1.75,1.75,5.25];
+  function makeCars(seed){ var r=rng(seed); var cars=[];
+    for(var i=0;i<10;i++){ var lane=i%4, away=lane>=2; var len=i%3?4.5:12, wid=i%3?1.9:2.5;
+      cars.push({lane:lane,x:LANES[lane],z:25+r()*180,len:len,wid:wid,v:(away?1:-1)*(24+r()*12),hue:r(),away:away}); }
+    return cars; }
+  function stepCars(cars,dt){ cars.forEach(function(k){ k.z+=k.v*dt; if(k.z>230)k.z=22; if(k.z<22)k.z=230; }); }
+
+  /* ============ projections ============ */
+  // forward view: camera on the gantry, 7 m up, looking down the road with a slight tilt
+  function fwd(W,H){ var f=W*0.9, hcam=7, hy=H*0.36, tilt=0.16;
+    return function(x,y,z){ // y = height above road
+      var zz=z*Math.cos(tilt)+(hcam-y)*Math.sin(tilt), yy=(hcam-y)*Math.cos(tilt)-z*Math.sin(tilt);
+      var s=f/zz; return {sx:W/2+x*s, sy:hy+yy*s+H*0.0, s:s}; }; }
+  // top view: straight down, road runs top to bottom, 60 m of road visible
+  function top(W,H){ var s=H/50; return function(x,y,z){ return {sx:W/2+x*s*2.2, sy:H-(z-30)*s, s:s*2.2}; }; }
+
+  /* ============ frame renderer ============ */
+  function drawFrame(x,W,H,cars,view,night,cl){
+    var P=view==='fwd'?fwd(W,H):top(W,H);
+    if(view==='fwd'){
+      x.fillStyle=night?'#0b0f14':'#c8d3dc'; x.fillRect(0,0,W,H);           // sky
+      x.fillStyle=night?'#0f1417':'#b9c3a4'; x.fillRect(0,H*0.36,W,H);       // verge
+      var far=P(-7.5,0,240), near=P(-7.5,0,6), farR=P(7.5,0,240), nearR=P(7.5,0,6);
+      x.fillStyle=night?'#1e2327':'#8a9096'; x.beginPath(); x.moveTo(near.sx,near.sy); x.lineTo(far.sx,far.sy); x.lineTo(farR.sx,farR.sy); x.lineTo(nearR.sx,nearR.sy); x.closePath(); x.fill();
+      x.strokeStyle=night?'#3a4147':'#d8dde2'; x.lineWidth=2;
+      [-3.5,0,3.5].forEach(function(lx,i){ if(i==1){x.setLineDash([]);x.lineWidth=3}else{x.setLineDash([3,4]);x.lineWidth=1.5}
+        x.beginPath(); for(var z=6;z<240;z+=3){var q=P(lx,0,z); if(z==6)x.moveTo(q.sx,q.sy);else x.lineTo(q.sx,q.sy)} x.stroke(); });
+      x.setLineDash([]);
+      // gantry ahead
+      var g1=P(-8,0,150),g2=P(8,0,150),g3=P(8,6,150),g4=P(-8,6,150); x.strokeStyle=night?'#2a3036':'#6b7278'; x.lineWidth=2;
+      x.strokeRect(g1.sx,g4.sy,g2.sx-g1.sx,g1.sy-g4.sy); x.fillStyle=night?'#1a1f24':'#4f565c'; x.fillRect(g1.sx+(g2.sx-g1.sx)*.55,g4.sy-2,(g2.sx-g1.sx)*.3,(g1.sy-g4.sy)*.5);
+    } else {
+      x.fillStyle=night?'#0e1215':'#c9d2b6'; x.fillRect(0,0,W,H);
+      var a=P(-7.5,0,0), bq=P(7.5,0,0); x.fillStyle=night?'#23282d':'#8a9096'; x.fillRect(a.sx,0,bq.sx-a.sx,H);
+      x.strokeStyle=night?'#4a5158':'#d8dde2';
+      [-3.5,0,3.5].forEach(function(lx,i){ var q=P(lx,0,0); if(i==1){x.setLineDash([]);x.lineWidth=5}else{x.setLineDash([26,22]);x.lineWidth=3} x.beginPath();x.moveTo(q.sx,0);x.lineTo(q.sx,H);x.stroke(); });
+      x.setLineDash([]);
+    }
+    var order=cars.slice().sort(function(a,b){return b.z-a.z});
+    order.forEach(function(k){
+      var w=k.wid, l=k.len, h=k.len>8?3.4:1.5;
+      // box corners: near-bottom, far-bottom, near-top, far-top (roof)
+      var nb=P(k.x-w/2,0,k.z-l/2), nb2=P(k.x+w/2,0,k.z-l/2), fb=P(k.x-w/2,0,k.z+l/2), fb2=P(k.x+w/2,0,k.z+l/2);
+      var nt=P(k.x-w/2,h,k.z-l/2), nt2=P(k.x+w/2,h,k.z-l/2), ft=P(k.x-w/2,h,k.z+l/2), ft2=P(k.x+w/2,h,k.z+l/2);
+      var body=['#2c3e5a','#d9dde2','#7a1f2b','#3a3f44'][Math.floor(k.hue*4)];
+      if(night) body='#22262a';
+      if(view==='fwd'){
+        x.fillStyle=body; x.beginPath(); x.moveTo(nb.sx,nb.sy); x.lineTo(nb2.sx,nb2.sy); x.lineTo(nt2.sx,nt2.sy); x.lineTo(nt.sx,nt.sy); x.closePath(); x.fill(); // near face
+        x.globalAlpha=night?.6:.85; x.beginPath(); x.moveTo(nt.sx,nt.sy); x.lineTo(nt2.sx,nt2.sy); x.lineTo(ft2.sx,ft2.sy); x.lineTo(ft.sx,ft.sy); x.closePath(); x.fill(); x.globalAlpha=1; // roof
+        var fy=(nb.sy+nt.sy)/2, lx1=nb.sx+(nb2.sx-nb.sx)*.2, lx2=nb.sx+(nb2.sx-nb.sx)*.8, ls=Math.max(1.5,nb.s*0.35);
+        if(k.away){ x.fillStyle=night?'#ff5a5a':'#b83a3a'; x.fillRect(lx1-ls/2,fy-ls/3,ls,ls*.6); x.fillRect(lx2-ls/2,fy-ls/3,ls,ls*.6);
+          if(night){ var g=x.createRadialGradient(nb.sx+(nb2.sx-nb.sx)/2,fy,1,nb.sx+(nb2.sx-nb.sx)/2,fy,ls*5); g.addColorStop(0,'rgba(255,90,90,.35)'); g.addColorStop(1,'rgba(255,90,90,0)'); x.fillStyle=g; x.fillRect(nb.sx-ls*5,fy-ls*5,(nb2.sx-nb.sx)+ls*10,ls*10); } }
+        else { [lx1,lx2].forEach(function(lx){ if(night){ var g=x.createRadialGradient(lx,fy,1,lx,fy,ls*7); g.addColorStop(0,'rgba(255,248,220,.98)'); g.addColorStop(.25,'rgba(255,240,190,.55)'); g.addColorStop(1,'rgba(255,240,190,0)'); x.fillStyle=g; x.fillRect(lx-ls*7,fy-ls*7,ls*14,ls*14);} else { x.fillStyle='#eef2f5'; x.fillRect(lx-ls/2,fy-ls/3,ls,ls*.6);} }); }
+      } else {
+        var cx=nb.sx+(nb2.sx-nb.sx)/2, cy=(nb.sy+fb.sy)/2, pw=nb2.sx-nb.sx, pl=Math.abs(nb.sy-fb.sy);
+        x.fillStyle=body; x.fillRect(cx-pw/2,cy-pl/2,pw,pl);
+        if(!night){ x.fillStyle='rgba(20,24,30,.55)'; x.fillRect(cx-pw/2+4,cy-pl/2+8,pw-8,pl*.15); x.fillRect(cx-pw/2+4,cy+pl/2-8-pl*.15,pw-8,pl*.15); }
+        var hy=k.away?cy-pl/2:cy+pl/2, ty=k.away?cy+pl/2:cy-pl/2;
+        if(night){ var g=x.createRadialGradient(cx,hy,2,cx,hy,60); g.addColorStop(0,'rgba(255,245,210,.95)'); g.addColorStop(.3,'rgba(255,240,190,.5)'); g.addColorStop(1,'rgba(255,240,190,0)'); x.fillStyle=g; x.fillRect(cx-70,hy-70,140,140); x.fillStyle='rgba(255,70,70,.8)'; x.fillRect(cx-pw/2+3,ty-3,6,5); x.fillRect(cx+pw/2-9,ty-3,6,5); }
+      }
+    });
+    if(night){ x.fillStyle='rgba(6,8,12,.28)'; x.fillRect(0,0,W,H); }
+  }
+
+  /* ============ event generator (per frame, in screen pixels) ============ */
+  function genEvents(cars,view,W,H,dt,r,out){
+    var P=view==='fwd'?fwd(W,H):top(W,H);
+    cars.forEach(function(k){
+      var w=k.wid, l=k.len, h=k.len>8?3.4:1.5, spd=Math.abs(k.v);
+      var a=P(k.x-w/2,0,k.z-l/2), b=P(k.x+w/2,0,k.z-l/2), c=P(k.x-w/2,0,k.z+l/2), d=P(k.x+w/2,0,k.z+l/2), tp=P(k.x-w/2,h,k.z-l/2), tp2=P(k.x+w/2,h,k.z-l/2);
+      var scale=view==='fwd'?a.s:a.s; var n=Math.round(spd*dt*scale*(view==='fwd'?0.9:0.35))+2;
+      // edges that move on the sensor: for fwd, the whole silhouette shifts; leading edge polarity depends on brightness change sign; we tie ON to the near/bottom edge and OFF to the far/top edge
+      for(var i=0;i<n;i++){
+        var u=r();
+        if(view==='fwd'){
+          var e1={x:a.sx+(b.sx-a.sx)*u, y:a.sy+(r()-.5)*2, p:k.away?-1:1};          // bottom edge
+          var e2={x:tp.sx+(tp2.sx-tp.sx)*u, y:tp.sy+(r()-.5)*2, p:k.away?1:-1};      // roof line
+          out.push(e1,e2);
+          if(r()<.5){ var side=r()<.5?a:b, st=r()<.5?tp:tp2; out.push({x:side.sx+(r()-.5)*1.5, y:a.sy+(tp.sy-a.sy)*r(), p:r()<.5?1:-1}); }
+        } else {
+          var lead=k.away?c:a, trail=k.away?a:c, lead2=k.away?d:b, trail2=k.away?b:d;
+          out.push({x:lead.sx+(lead2.sx-lead.sx)*u, y:lead.sy+(r()-.5)*3, p:1});
+          out.push({x:trail.sx+(trail2.sx-trail.sx)*u, y:trail.sy+(r()-.5)*3, p:-1});
+          if(r()<.3){ out.push({x:(r()<.5?a.sx:b.sx)+(r()-.5)*2, y:a.sy+(c.sy-a.sy)*r(), p:r()<.5?1:-1}); }
+        }
+      }
+    });
+    for(var j=0;j<3;j++) if(r()<.6) out.push({x:r()*W,y:r()*H,p:r()<.5?1:-1,noise:true});
+    return out;
+  }
+
+  /* ============ live simulation ============ */
+  var c=document.getElementById('road'),x=c.getContext('2d'),W=c.width,H=c.height;
+  var view='fwd', cam='event', night=false, raf=0, visible=true, last=performance.now();
+  var cars=makeCars(19), er=rng(5), live=[];
+  function drawEvents(cl,dt){
+    x.fillStyle=cl.p2; x.fillRect(0,0,W,H);
+    var fresh=genEvents(cars,view,W,H,dt,er,[]); fresh.forEach(function(e){e.e=e.noise?.45:1; live.push(e)});
+    var g=3;
+    for(var j=live.length-1;j>=0;j--){ var e=live[j]; e.e*=(view==='top'?0.8:0.88); if(e.e<.05){live.splice(j,1);continue}
+      x.globalAlpha=e.e; x.fillStyle=e.p>0?cl.on:cl.off; x.fillRect(Math.round(e.x/g)*g,Math.round(e.y/g)*g,g-.5,g-.5); }
+    x.globalAlpha=1; if(live.length>9000) live.splice(0,live.length-9000);
+  }
+  function frame(now){
+    if(!visible){raf=0;return}
+    var dt=Math.min(.05,(now-last)/1000); last=now; stepCars(cars,dt);
+    var cl=col(); if(cam==='frame') drawFrame(x,W,H,cars,view,night,cl); else drawEvents(cl,dt);
+    x.font='12px "Bricolage Grotesque", sans-serif'; x.fillStyle=(cam==='frame'&&night)?'#c9ced3':cl.mut;
+    x.fillText((cam==='frame'?'frame camera':'event camera')+(night?', night':', day')+(cam==='event'&&night?': unchanged':''),10,H-10);
+    x.fillText(view==='fwd'?'gantry camera looking down the road':'gantry camera looking straight down',W-250,H-10);
+    if(!reduce) raf=requestAnimationFrame(frame);
+  }
+  function press(id,on){document.getElementById(id).setAttribute('aria-pressed',!!on)}
+  function refresh(){ press('vFwd',view==='fwd'); press('vTop',view==='top'); press('vFrame',cam==='frame'); press('vEvent',cam==='event'); press('vNight',night); live=[]; if(reduce){for(var i=0;i<10;i++){stepCars(cars,.04); if(cam==='event')drawEvents(col(),.04)} frame(performance.now())} }
+  document.getElementById('vFwd').addEventListener('click',function(){view='fwd';refresh()});
+  document.getElementById('vTop').addEventListener('click',function(){view='top';refresh()});
+  document.getElementById('vFrame').addEventListener('click',function(){cam='frame';refresh()});
+  document.getElementById('vEvent').addEventListener('click',function(){cam='event';refresh()});
+  document.getElementById('vNight').addEventListener('click',function(){night=!night;refresh()});
+  if('IntersectionObserver' in window) new IntersectionObserver(function(es){visible=es[0].isIntersecting; if(visible&&!raf&&!reduce){last=performance.now();raf=requestAnimationFrame(frame)}}).observe(c);
+  if(reduce) refresh(); else raf=requestAnimationFrame(frame);
+
+  /* ============ representations: one window, four ways ============ */
+  /* Events are generated the way a DVS generates them: render the scene in grey at
+     each sub-step, take the change in log intensity per pixel, and emit an event
+     whenever it crosses a contrast threshold. ON = got brighter, OFF = got darker. */
+  var rc=document.getElementById('reprC'), y=rc.getContext('2d'), RW=rc.width, RH=rc.height;
+  var GX=176, GY=99;                               // sensor resolution for the simulation
+  var offc=document.createElement('canvas'); offc.width=GX; offc.height=GY;
+  var off=offc.getContext('2d',{willReadFrequently:true});
+  function luma(cars){
+    drawFrame(off,GX,GY,cars,'fwd',false,col());
+    var d=off.getImageData(0,0,GX,GY).data, L=new Float32Array(GX*GY);
+    for(var i=0,j=0;i<L.length;i++,j+=4) L[i]=Math.log((0.299*d[j]+0.587*d[j+1]+0.114*d[j+2])/255*0.94+0.06);
+    return L;
+  }
+  function simulate(){
+    var cars=[
+      {lane:0,x:LANES[0],z:26,len:4.5,wid:1.9,v:-30,hue:.05,away:false},
+      {lane:2,x:LANES[2],z:48,len:4.5,wid:1.9,v:26,hue:.55,away:true},
+      {lane:3,x:LANES[3],z:86,len:12,wid:2.5,v:22,hue:.3,away:true}
+    ], steps=24, dt=0.08/steps, C=0.11;
+    var prev=luma(cars), evs=[], ref=prev.slice();
+    for(var s=1;s<=steps;s++){
+      stepCars(cars,dt); var cur=luma(cars), t=(s-1)/(steps-1);
+      for(var i=0;i<cur.length;i++){
+        var diff=cur[i]-ref[i];
+        if(Math.abs(diff)<C) continue;
+        var n=Math.min(3,Math.floor(Math.abs(diff)/C)), p=diff>0?1:-1;
+        for(var k=0;k<n;k++) evs.push({gx:i%GX,gy:(i/GX)|0,t:t,p:p});
+        ref[i]+=p*n*C;                              // reset level, as a pixel does
+      }
+    }
+    return {evs:evs,cars:cars};
+  }
+  function drawRepr(){
+    var cl=col(); y.clearRect(0,0,RW,RH);
+    var pw=400, ph=225, pad=20, sim=simulate(), evs=sim.evs;
+    function label(t,px,py){ y.fillStyle=cl.mut; y.font='12px "Bricolage Grotesque", sans-serif'; y.fillText(t,px,py); }
+    function cell(ox,oy,w,h,vals,scale){
+      var cw=w/GX, ch=h/GY;
+      for(var gy=0;gy<GY;gy++)for(var gx=0;gx<GX;gx++){
+        var v=vals[gy*GX+gx]; if(!v) continue;
+        y.globalAlpha=Math.min(1,Math.abs(v)*scale); y.fillStyle=v>0?cl.on:cl.off;
+        y.fillRect(ox+gx*cw,oy+gy*ch,Math.max(1,cw),Math.max(1,ch));
+      }
+      y.globalAlpha=1;
+    }
+    function panel(ox,oy,title,vals,scale){ y.fillStyle=cl.p2; y.fillRect(ox,oy,pw,ph); cell(ox,oy,pw,ph,vals,scale); label(title,ox,oy-10); }
+    /* 1. the frame the events came from (final state of the window) */
+    y.save(); y.translate(pad,30); y.beginPath(); y.rect(0,0,pw,ph); y.clip(); drawFrame(y,pw,ph,sim.cars,'fwd',false,cl); y.restore();
+    label('Frame camera: the last moment of the window',pad,20);
+    /* 2. binning */
+    var g1=new Float32Array(GX*GY); evs.forEach(function(e){ g1[e.gy*GX+e.gx]+=e.p; });
+    panel(pad*2+pw,30,'Binning: every event in the window on one plane',g1,.5);
+    /* 3. voxel grid as stacked time slices */
+    var B=5, vg=[]; for(var b=0;b<B;b++) vg.push(new Float32Array(GX*GY));
+    evs.forEach(function(e){ var tau=e.t*(B-1), b0=Math.floor(tau), w=tau-b0;
+      vg[b0][e.gy*GX+e.gx]+=e.p*(1-w); if(b0+1<B) vg[b0+1][e.gy*GX+e.gx]+=e.p*w; });
+    var ox=pad, oy=30+ph+42;
+    label('Voxel grid: the same window cut into '+B+' time bins, stacked along time',ox,oy-10);
+    var sw=pw*0.46, sh=ph*0.5, dx=(pw-sw-14)/(B-1), dy=(ph-sh-16)/(B-1);
+    y.fillStyle=cl.p2; y.fillRect(ox,oy,pw,ph);
+    y.strokeStyle=cl.rule; y.lineWidth=1; y.beginPath();
+    y.moveTo(ox+10,oy+ph-6); y.lineTo(ox+10+(B-1)*dx,oy+ph-6-(B-1)*dy); y.stroke();
+    for(b=B-1;b>=0;b--){
+      var sx0=ox+7+b*dx, sy0=oy+(ph-sh)-8-b*dy;
+      y.strokeStyle=cl.rule; y.lineWidth=1; y.strokeRect(sx0+.5,sy0+.5,sw,sh);
+      cell(sx0,sy0,sw,sh,vg[b],1.2);
+      y.fillStyle=cl.mut; y.font='10px "Bricolage Grotesque", sans-serif';
+      y.fillText('t'+(b+1),sx0+4,sy0+12);
+    }
+    y.font='11px "Bricolage Grotesque", sans-serif'; y.fillStyle=cl.mut;
+    y.fillText('time →',ox+pw-52,oy+ph-6);
+    /* 4. leaky binning */
+    var g3=new Float32Array(GX*GY), tc=0.3;
+    evs.forEach(function(e){ g3[e.gy*GX+e.gx]+=e.p*Math.exp(-(1-e.t)/tc); });
+    panel(pad*2+pw,oy,'Leaky binning: recent edges strong, older ones fading',g3,.9);
+    label('ON events red (pixel got brighter), OFF events blue (pixel got darker). Window: 80 ms, '+evs.length+' events.',pad,RH-8);
+  }
+  window.addEventListener('themechange',function(){drawRepr()});
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(drawRepr); else drawRepr();
+})();
+</script>
+
+</body>
+</html>
