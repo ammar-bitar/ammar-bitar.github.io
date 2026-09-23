@@ -53,6 +53,7 @@
       <dt>Scope</dt><dd>Detection, segmentation and anomaly detection on industrial PCs and Nvidia Jetson, HMI and robot integration, and the related foundation-model research</dd>
       <dt>Lines</dt><dd>Automated quality inspection in solar-panel manufacturing, with a robotic pick and place; and multi-sensor anomaly detection along a 200 m paste line with four camera stations</dd>
       <dt>Stack</dt><dd>PyTorch, TensorRT, ONNX, DeepStream and GStreamer in C++, Triton, Jetson Linux, Docker, Siemens HMI</dd>
+      <dt>Result</dt><dd>The paste line could be monitored remotely from a single screen, so far fewer people were needed to watch it</dd>
       <dt>About the figures</dt><dd>The diagrams and interactive pieces here are built for this page: working simulations of the ideas, written from scratch so you can play with them.</dd>
     </dl>
   </div>
@@ -94,6 +95,9 @@
         <figcaption>The same strip of paste seen at the four stations. The texture changes from stage to stage, and so do the defects: bubbles and thin spots while it is wet, ridges and drag marks while it is tacky, skin cracks as it sets, flaking and breaks once hard. Each station has its own model and thresholds.</figcaption>
       </figure>
       <p>Each station therefore has its own model and thresholds, trained on what the paste looks like at that point on the line.</p>
+      <div class="callout">
+        <p><strong>Result.</strong> The whole 200 m line could be monitored remotely from a single screen, so far fewer people were needed to watch it.</p>
+      </div>
     </div>
   </section>
 
